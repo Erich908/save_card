@@ -120,7 +120,10 @@ class _SavedCardsListState extends ConsumerState<SavedCardsList> {
             visible: listOfCards.isEmpty,
             child: Expanded(
                 child: Center(
-                    child: Text('You have no successfully validated cards', style: TextStyle(fontSize: 16),))),
+                    child: Text(
+              'You have no successfully validated cards',
+              style: TextStyle(fontSize: 16),
+            ))),
           )
         ],
       ),

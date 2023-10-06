@@ -20,13 +20,12 @@ class BankCardModel {
 
   factory BankCardModel.fromJson(Map<String, dynamic> json) {
     return BankCardModel(
-      id: json['id'] ?? 0,
-      cardNumber: json['cardNumber'] ?? 0,
-      cardHolder: json['cardHolder'] ?? '',
-      expiry: json['expiry'] ?? '',
-      cvv: json['cvv'] ?? 0,
-      countryCode: json['countryCode'] ?? ''
-    );
+        id: json['id'] ?? 0,
+        cardNumber: json['cardNumber'] ?? 0,
+        cardHolder: json['cardHolder'] ?? '',
+        expiry: json['expiry'] ?? '',
+        cvv: json['cvv'] ?? 0,
+        countryCode: json['countryCode'] ?? '');
   }
 
   Map<String, dynamic> toJson() {

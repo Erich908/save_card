@@ -13,6 +13,7 @@ class SavedCard extends StatefulWidget {
 
   ///The card info that will be used for the summary.
   final BankCardModel card;
+
   ///Action triggered when the delete button is pressed.
   final VoidCallback? onDeleted;
 
@@ -21,13 +22,13 @@ class SavedCard extends StatefulWidget {
 }
 
 class _SavedCardState extends State<SavedCard> {
-
   String firstTwoDigits = '';
   @override
   void initState() {
     firstTwoDigits = widget.card.cardNumber.toString().substring(0, 2);
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -36,10 +37,8 @@ class _SavedCardState extends State<SavedCard> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [
-                ColorPalette.primary,
-                ColorPalette.secondary
-              ]),
+              gradient: const LinearGradient(
+                  colors: [ColorPalette.primary, ColorPalette.secondary]),
               borderRadius: BorderRadius.circular(10),
             ),
             height: 80,
@@ -52,18 +51,35 @@ class _SavedCardState extends State<SavedCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('**** **** **** ' + widget.card.cardNumber.toString().substring(12), style: const TextStyle(fontSize: 18, color: Colors.white),),
-                        Text(widget.card.expiry, style: const TextStyle(fontSize: 18, color: Colors.white),),
+                        Text(
+                          '**** **** **** ' +
+                              widget.card.cardNumber.toString().substring(12),
+                          style: const TextStyle(
+                              fontSize: 18, color: Colors.white),
+                        ),
+                        Text(
+                          widget.card.expiry,
+                          style: const TextStyle(
+                              fontSize: 18, color: Colors.white),
+                        ),
                       ],
                     ),
-                    SvgPicture.asset(firstTwoDigits.startsWith('4') ? 'lib/icons/visa.svg' : firstTwoDigits.startsWith('5') ? 'lib/icons/mastercard.svg' : 'lib/icons/american-express.svg')
+                    SvgPicture.asset(firstTwoDigits.startsWith('4')
+                        ? 'lib/icons/visa.svg'
+                        : firstTwoDigits.startsWith('5')
+                            ? 'lib/icons/mastercard.svg'
+                            : 'lib/icons/american-express.svg')
                   ],
                 )
               ],
             ),
           ),
         ),
-        IconButton(onPressed: widget.onDeleted, icon: const Icon(Icons.delete_forever, color: ColorPalette.tertiaryLight),)
+        IconButton(
+          onPressed: widget.onDeleted,
+          icon: const Icon(Icons.delete_forever,
+              color: ColorPalette.tertiaryLight),
+        )
       ],
     );
   }

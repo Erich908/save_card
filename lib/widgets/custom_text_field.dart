@@ -7,7 +7,14 @@ import 'package:save_card/utils/theme.dart';
 ///The text field used across the app for consistency.
 class CustomTextField extends StatelessWidget {
   const CustomTextField(
-      {super.key, required this.title, this.onChanged, this.textInputType, this.maxLength, this.controller, this.textCapitalization, this.onTap});
+      {super.key,
+      required this.title,
+      this.onChanged,
+      this.textInputType,
+      this.maxLength,
+      this.controller,
+      this.textCapitalization,
+      this.onTap});
 
   ///The label for the text field that would float when you type.
   final String title;
