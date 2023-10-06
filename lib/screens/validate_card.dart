@@ -538,9 +538,6 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
         height: 50,
         child: TextButton(
           onPressed: () {
-            print(
-                '${ref.read(cardNumber)}\n${ref.read(nameOnCard)}\n${ref.read(expiryDate)}\n${ref.read(cvv)}\n${ref.read(countryCode)}');
-            //TODO: Add validation for country code
             if (cardHolderController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Name on Card is Required')));
@@ -599,14 +596,10 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                   .then((bool success) async {
                 if (success) {
                   ref.read(listOfSavedCards.notifier).state = bankCards;
-                  print('save success');
                   context.pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Card is Valid')));
-                  print(
-                      await encryptedSharedPreferences.getString('savedCards'));
                 } else {
-                  print('save fail');
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Card is Invalid')));
                 }
