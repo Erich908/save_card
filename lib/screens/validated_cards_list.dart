@@ -1,5 +1,7 @@
+/// {@category Screens}
+library validated_cards_list;
+
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,8 @@ import 'package:save_card/widgets/validated_card.dart';
 
 import '../utils/theme.dart';
 
+///This screen displays the cards that have been validated successfully before.
+///You can also delete the cards.
 class SavedCardsList extends ConsumerStatefulWidget {
   const SavedCardsList({super.key});
 

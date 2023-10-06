@@ -1,7 +1,11 @@
+/// {@category Utils}
+library router;
+
 import 'package:go_router/go_router.dart';
 import 'package:save_card/screens/validate_card.dart';
 import 'package:save_card/screens/validated_cards_list.dart';
 
+///Router that is used to navigate through screens.
 class MyRouter {
   static final router = GoRouter(
     routes: [

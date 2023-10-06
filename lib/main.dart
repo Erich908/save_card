@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:save_card/utils/router.dart';
 import 'package:save_card/utils/theme.dart';
@@ -21,8 +22,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Save Card Demo',
       theme: Themes.lightMode,
-      darkTheme: Themes.darkMode,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light,
     );
   }
 }

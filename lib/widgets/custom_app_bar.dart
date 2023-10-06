@@ -1,10 +1,17 @@
+/// {@category Widgets}
+library custom_app_bar;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+///The app bar used across the app for consistency.
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({super.key, required this.title, this.removeBackButton});
 
+  ///Title of the screen.
   final String title;
+
+  ///To remove the back button from the app bar.
   final bool? removeBackButton;
 
   @override

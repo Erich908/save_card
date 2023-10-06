@@ -1,13 +1,19 @@
+/// {@category Widgets}
+library validated_card;
+
 import 'package:flutter/material.dart';
 import 'package:save_card/models/bank_card_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../utils/theme.dart';
 
+///The widget used to display a summary of a successfully validated card.
 class SavedCard extends StatefulWidget {
   const SavedCard({super.key, required this.card, this.onDeleted});
 
+  ///The card info that will be used for the summary.
   final BankCardModel card;
+  ///Action triggered when the delete button is pressed.
   final VoidCallback? onDeleted;
 
   @override

@@ -1,3 +1,6 @@
+/// {@category Models}
+library bank_card_model;
+
 class BankCardModel {
   final int id;
   final int cardNumber;

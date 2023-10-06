@@ -1,3 +1,6 @@
+/// {@category Screens}
+library validate_card;
+
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -13,11 +16,15 @@ import 'package:ml_card_scanner/ml_card_scanner.dart';
 
 import '../providers/validated_cards_provider.dart';
 
+///This screen is used for the purpose of Validating a Bank Card and will only
+///store the card in local storage if has been validated successfully.
 class SaveCard extends ConsumerStatefulWidget {
   const SaveCard({super.key, required this.id});
 
+  ///Route for GoRouter.
   static String route = 'save-card';
 
+  ///Id of the card that will be saved.
   final int id;
 
   @override
@@ -25,7 +32,11 @@ class SaveCard extends ConsumerStatefulWidget {
 }
 
 class _SavedCardsListState extends ConsumerState<SaveCard> {
+  ///The controller used for the Card Scanner.
   final ScannerWidgetController _controller = ScannerWidgetController();
+
+  ///The context that will be set by the showModalBottomSheet builder so the
+  ///bottom sheet can be dismissed externally.
   late BuildContext bottomSheetContext;
 
   TextEditingController cardHolderController = TextEditingController();
@@ -34,21 +45,22 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
   TextEditingController cvvController = TextEditingController();
   TextEditingController countryCodeController = TextEditingController();
 
+  ///Shared preference instance to save a valid card to local storage.
   EncryptedSharedPreferences encryptedSharedPreferences =
       EncryptedSharedPreferences();
 
+  ///Filename of SVG that should be show to indicate the card type.
   String cardType = '';
 
   @override
   void initState() {
-    _controller
-      .setCardListener((value) {
-        String cardNumberScanned = value!.number;
-        cardNumberController.text = cardNumberScanned;
-        ref.read(cardNumber.notifier).state = cardNumberScanned;
-        setCardType(cardNumberScanned);
-        Navigator.of(bottomSheetContext).pop();
-      });
+    _controller.setCardListener((value) {
+      String cardNumberScanned = value!.number;
+      cardNumberController.text = cardNumberScanned;
+      ref.read(cardNumber.notifier).state = cardNumberScanned;
+      setCardType(cardNumberScanned);
+      Navigator.of(bottomSheetContext).pop();
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       ref.invalidate(cardNumber);
@@ -313,15 +325,19 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                       ),
                       IconButton(
                           onPressed: () {
-                            showModalBottomSheet(context: context, isScrollControlled: true, builder: (context) {
-                              bottomSheetContext = context;
-                              return Expanded(
-                                child: ScannerWidget(
-                                  controller: _controller,
-                                  overlayOrientation: CardOrientation.landscape,
-                                ),
-                              );
-                            });
+                            showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                builder: (context) {
+                                  bottomSheetContext = context;
+                                  return Expanded(
+                                    child: ScannerWidget(
+                                      controller: _controller,
+                                      overlayOrientation:
+                                          CardOrientation.landscape,
+                                    ),
+                                  );
+                                });
                           },
                           icon: Transform.rotate(
                               angle: pi / 2,
@@ -448,10 +464,11 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                                                               .text);
                                                       ref
                                                           .read(validCountries
-                                                          .notifier)
+                                                              .notifier)
                                                           .state = countries;
                                                     });
-                                                    FocusScope.of(context).unfocus();
+                                                    FocusScope.of(context)
+                                                        .unfocus();
                                                   },
                                                   child: Text(
                                                     'Add',
@@ -533,7 +550,16 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
             } else if (expiryDateController.text.length != 5) {
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Expiry Date is Invalid')));
-            } else if (int.parse(expiryDateController.text.substring(0, 2)) > 31 || DateTime(int.parse('20${expiryDateController.text.substring(3)}'), int.parse(expiryDateController.text.substring(0, 2))).add(Duration(days: 31)).compareTo(DateTime.now()) < 0) {
+            } else if (int.parse(expiryDateController.text.substring(0, 2)) >
+                    31 ||
+                DateTime(
+                            int.parse(
+                                '20${expiryDateController.text.substring(3)}'),
+                            int.parse(
+                                expiryDateController.text.substring(0, 2)))
+                        .add(Duration(days: 31))
+                        .compareTo(DateTime.now()) <
+                    0) {
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Expiry Date is Invalid')));
             } else if ((cvvController.text.length != 4 &&
@@ -596,6 +622,8 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
     );
   }
 
+  ///The transition builder used to flip the card around when specific text
+  ///fields are focused.
   Widget transitionBuilder(Widget widget, Animation<double> animation) {
     final rotateAnim = Tween(begin: pi, end: 0.0).animate(animation);
     return AnimatedBuilder(
@@ -616,6 +644,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
     );
   }
 
+  ///Returns the file path of the SVG used to indicate card type.
   void setCardType(String text) {
     if (text.startsWith('4')) {
       setState(() {
@@ -625,8 +654,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
       setState(() {
         cardType = 'lib/icons/mastercard.svg';
       });
-    } else if (text.startsWith('34') ||
-        text.startsWith('37')) {
+    } else if (text.startsWith('34') || text.startsWith('37')) {
       setState(() {
         cardType = 'lib/icons/american-express.svg';
       });
