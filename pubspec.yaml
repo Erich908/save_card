@@ -50,10 +50,14 @@ dev_dependencies:
   flutter_lints: ^2.0.0
   riverpod_lint: ^2.1.1
   google_fonts: ^6.1.0
+  flutter_svg: ^2.0.7
   encrypted_shared_preferences: ^3.0.1
+  ml_card_scanner: ^0.0.5
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - lib/icons/
   fonts:
     - family: OCRB
       fonts:

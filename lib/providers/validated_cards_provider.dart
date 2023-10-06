@@ -9,6 +9,10 @@ final showFrontOfCard = StateProvider<bool>((ref) {
   return true;
 });
 
+final validCountries = StateProvider<List<String>>((ref) {
+  return ['South Africa', 'Namibia', 'Botswana'];
+});
+
 final cardNumber = StateProvider<String>((ref) {
   return '0000 0000 0000 0000';
 });

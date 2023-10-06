@@ -1,9 +1,7 @@
-/// {@category Screens}
-library saved_card_list;
-
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:save_card/models/bank_card_model.dart';
@@ -11,8 +9,9 @@ import 'package:save_card/utils/theme.dart';
 import 'package:save_card/widgets/custom_app_bar.dart';
 import 'package:save_card/widgets/custom_text_field.dart';
 import 'package:encrypted_shared_preferences/encrypted_shared_preferences.dart';
+import 'package:ml_card_scanner/ml_card_scanner.dart';
 
-import '../providers/saved_cards_provider.dart';
+import '../providers/validated_cards_provider.dart';
 
 class SaveCard extends ConsumerStatefulWidget {
   const SaveCard({super.key, required this.id});
@@ -26,6 +25,8 @@ class SaveCard extends ConsumerStatefulWidget {
 }
 
 class _SavedCardsListState extends ConsumerState<SaveCard> {
+  final ScannerWidgetController _controller = ScannerWidgetController();
+  late BuildContext bottomSheetContext;
 
   TextEditingController cardHolderController = TextEditingController();
   TextEditingController cardNumberController = TextEditingController();
@@ -36,11 +37,35 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
   EncryptedSharedPreferences encryptedSharedPreferences =
       EncryptedSharedPreferences();
 
+  String cardType = '';
+
+  @override
+  void initState() {
+    _controller
+      .setCardListener((value) {
+        String cardNumberScanned = value!.number;
+        cardNumberController.text = cardNumberScanned;
+        ref.read(cardNumber.notifier).state = cardNumberScanned;
+        setCardType(cardNumberScanned);
+        Navigator.of(bottomSheetContext).pop();
+      });
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      ref.invalidate(cardNumber);
+      ref.invalidate(nameOnCard);
+      ref.invalidate(cvv);
+      ref.invalidate(expiryDate);
+      ref.invalidate(countryCode);
+      ref.invalidate(showFrontOfCard);
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
-        title: 'Save a Card',
+        title: 'Validate a Card',
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -51,15 +76,14 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                 children: [
                   AnimatedSwitcher(
                     switchInCurve: Curves.easeInBack,
-                    switchOutCurve: Curves.easeOutBack.flipped,
+                    switchOutCurve: Curves.easeInBack.flipped,
                     layoutBuilder: (widget, list) =>
                         Stack(children: [widget!, ...list]),
                     transitionBuilder: transitionBuilder,
-                    duration: const Duration(seconds: 1),
-                    reverseDuration: const Duration(seconds: 1),
+                    duration: const Duration(milliseconds: 800),
                     child: ref.watch(showFrontOfCard)
                         ? Material(
-                            key: const Key('FrontCard'),
+                            key: const ValueKey(true),
                             borderRadius: BorderRadius.circular(10),
                             elevation: 3,
                             child: AspectRatio(
@@ -67,7 +91,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    gradient:  const LinearGradient(colors: [
+                                    gradient: const LinearGradient(colors: [
                                       ColorPalette.primary,
                                       ColorPalette.secondary
                                     ]),
@@ -81,7 +105,12 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Icon(Icons.credit_card),
+                                        cardType.isEmpty
+                                            ? Icon(
+                                                Icons.credit_card,
+                                                color: Colors.white,
+                                              )
+                                            : SvgPicture.asset(cardType),
                                         Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -123,7 +152,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                                 )),
                           )
                         : Material(
-                            key: const Key('RearCard'),
+                            key: const ValueKey(false),
                             borderRadius: BorderRadius.circular(10),
                             elevation: 3,
                             child: AspectRatio(
@@ -201,7 +230,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'COUNTRY CODE',
+                                                'COUNTRY OF ISSUE',
                                                 style: TextStyle(
                                                     fontFamily: 'OCRB',
                                                     color: Colors.white),
@@ -260,25 +289,44 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                   ),
                   // Text(ref.watch(completeUsernameProvider)),
 
-                  CustomTextField(
-                    controller: cardNumberController,
-                    onTap: () {
-                      ref.read(showFrontOfCard.notifier).state = true;
-                    },
-                    title: 'Card Number',
-                    textInputType: TextInputType.number,
-                    maxLength: 16,
-                    onChanged: (text) {
-                      int spacesAmount = (text.length / 4).ceil() - 1;
-                      for (int i = 1; i <= spacesAmount; i++) {
-                        text =
-                            '${text.substring(0, i * 4 + i - 1)} ${text.substring(i * 4 + i - 1)}';
-                      }
-                      // if (text.length == 16) {
-                      //   FocusNode().nextFocus();
-                      // }
-                      ref.read(cardNumber.notifier).state = text;
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          controller: cardNumberController,
+                          onTap: () {
+                            ref.read(showFrontOfCard.notifier).state = true;
+                          },
+                          title: 'Card Number',
+                          textInputType: TextInputType.number,
+                          maxLength: 16,
+                          onChanged: (text) {
+                            int spacesAmount = (text.length / 4).ceil() - 1;
+                            for (int i = 1; i <= spacesAmount; i++) {
+                              text =
+                                  '${text.substring(0, i * 4 + i - 1)} ${text.substring(i * 4 + i - 1)}';
+                            }
+                            setCardType(text);
+                            ref.read(cardNumber.notifier).state = text;
+                          },
+                        ),
+                      ),
+                      IconButton(
+                          onPressed: () {
+                            showModalBottomSheet(context: context, isScrollControlled: true, builder: (context) {
+                              bottomSheetContext = context;
+                              return Expanded(
+                                child: ScannerWidget(
+                                  controller: _controller,
+                                  overlayOrientation: CardOrientation.landscape,
+                                ),
+                              );
+                            });
+                          },
+                          icon: Transform.rotate(
+                              angle: pi / 2,
+                              child: Icon(Icons.document_scanner_outlined)))
+                    ],
                   ),
                   CustomTextField(
                     controller: cardHolderController,
@@ -320,7 +368,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                       ),
                       Expanded(
                           child: CustomTextField(
-                            maxLength: 4,
+                        maxLength: 4,
                         controller: cvvController,
                         onTap: () {
                           ref.read(showFrontOfCard.notifier).state = false;
@@ -333,17 +381,129 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                       ))
                     ],
                   ),
-                  CustomTextField(
-                    maxLength: 3,
-                    controller: countryCodeController,
-                    onTap: () {
-                      ref.read(showFrontOfCard.notifier).state = false;
-                    },
-                    textCapitalization: TextCapitalization.characters,
-                    title: 'Country Code',
-                    onChanged: (text) {
-                      ref.read(countryCode.notifier).state = text;
-                    },
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          controller: countryCodeController,
+                          onTap: () {
+                            ref.read(showFrontOfCard.notifier).state = false;
+                          },
+                          textCapitalization: TextCapitalization.words,
+                          title: 'Country of Issue',
+                          onChanged: (text) {
+                            ref.read(countryCode.notifier).state = text;
+                          },
+                        ),
+                      ),
+                      IconButton(
+                          onPressed: () {
+                            showModalBottomSheet(
+                                context: context,
+                                builder: (context) {
+                                  List<String> countries =
+                                      ref.read(validCountries);
+                                  TextEditingController addCountryController =
+                                      TextEditingController();
+                                  return StatefulBuilder(
+                                      builder: (context, bottomSheetSetState) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            'Valid Countries',
+                                            style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                  child: CustomTextField(
+                                                title: 'Country Name',
+                                                controller:
+                                                    addCountryController,
+                                              )),
+                                              Container(
+                                                width: 70,
+                                                margin:
+                                                    EdgeInsets.only(left: 8),
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  gradient:
+                                                      const LinearGradient(
+                                                          colors: [
+                                                        ColorPalette.primary,
+                                                        ColorPalette.secondary
+                                                      ]),
+                                                ),
+                                                height: 40,
+                                                child: TextButton(
+                                                  onPressed: () {
+                                                    bottomSheetSetState(() {
+                                                      countries.add(
+                                                          addCountryController
+                                                              .text);
+                                                      ref
+                                                          .read(validCountries
+                                                          .notifier)
+                                                          .state = countries;
+                                                    });
+                                                    FocusScope.of(context).unfocus();
+                                                  },
+                                                  child: Text(
+                                                    'Add',
+                                                    style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 18),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Expanded(
+                                            child: ListView(
+                                              children: [
+                                                for (String country
+                                                    in countries)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Text(country),
+                                                      IconButton(
+                                                          onPressed: () {
+                                                            bottomSheetSetState(
+                                                                () {
+                                                              countries.remove(
+                                                                  countries.firstWhere(
+                                                                      (element) =>
+                                                                          element ==
+                                                                          country));
+                                                              ref
+                                                                  .read(validCountries
+                                                                      .notifier)
+                                                                  .state = countries;
+                                                            });
+                                                          },
+                                                          icon: Icon(
+                                                              Icons.delete))
+                                                    ],
+                                                  )
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  });
+                                });
+                          },
+                          icon: Icon(Icons.settings))
+                    ],
                   ),
                 ],
               ),
@@ -365,17 +525,34 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                 '${ref.read(cardNumber)}\n${ref.read(nameOnCard)}\n${ref.read(expiryDate)}\n${ref.read(cvv)}\n${ref.read(countryCode)}');
             //TODO: Add validation for country code
             if (cardHolderController.text.isEmpty) {
-
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Name on Card is Required')));
             } else if (cardNumberController.text.length != 16) {
-
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Card Number must be 16 digits')));
             } else if (expiryDateController.text.length != 5) {
-
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Expiry Date is Invalid')));
+            } else if (int.parse(expiryDateController.text.substring(0, 2)) > 31 || DateTime(int.parse('20${expiryDateController.text.substring(3)}'), int.parse(expiryDateController.text.substring(0, 2))).add(Duration(days: 31)).compareTo(DateTime.now()) < 0) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Expiry Date is Invalid')));
             } else if ((cvvController.text.length != 4 &&
                 cvvController.text.length != 3)) {
-
-            } else if (ref.read(listOfSavedCards).where((element) => element.cardNumber == int.parse(cardNumberController.text)).isEmpty) {
-
-            }else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('CVV is Invalid')));
+            } else if (ref
+                .read(listOfSavedCards)
+                .where((element) =>
+                    element.cardNumber == int.parse(cardNumberController.text))
+                .isNotEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('You have Validated this Card already')));
+            } else if (!ref
+                .read(validCountries)
+                .contains(countryCodeController.text)) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Country Misspelled or Banned')));
+            } else {
               List<BankCardModel> bankCards = [...ref.read(listOfSavedCards)];
               bankCards.add(BankCardModel(
                   id: widget.id,
@@ -398,9 +575,14 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                   ref.read(listOfSavedCards.notifier).state = bankCards;
                   print('save success');
                   context.pop();
-                  print(await encryptedSharedPreferences.getString('savedCards'));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Card is Valid')));
+                  print(
+                      await encryptedSharedPreferences.getString('savedCards'));
                 } else {
                   print('save fail');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Card is Invalid')));
                 }
               });
             }
@@ -432,5 +614,26 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
         );
       },
     );
+  }
+
+  void setCardType(String text) {
+    if (text.startsWith('4')) {
+      setState(() {
+        cardType = 'lib/icons/visa.svg';
+      });
+    } else if (text.startsWith('5')) {
+      setState(() {
+        cardType = 'lib/icons/mastercard.svg';
+      });
+    } else if (text.startsWith('34') ||
+        text.startsWith('37')) {
+      setState(() {
+        cardType = 'lib/icons/american-express.svg';
+      });
+    } else {
+      setState(() {
+        cardType = '';
+      });
+    }
   }
 }

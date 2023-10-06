@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
-import 'package:save_card/screens/save_card.dart';
-import 'package:save_card/screens/saved_cards_list.dart';
+import 'package:save_card/screens/validate_card.dart';
+import 'package:save_card/screens/validated_cards_list.dart';
 
 class MyRouter {
   static final router = GoRouter(

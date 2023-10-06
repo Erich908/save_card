@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:save_card/models/bank_card_model.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../utils/theme.dart';
 
@@ -14,6 +15,13 @@ class SavedCard extends StatefulWidget {
 }
 
 class _SavedCardState extends State<SavedCard> {
+
+  String firstTwoDigits = '';
+  @override
+  void initState() {
+    firstTwoDigits = widget.card.cardNumber.toString().substring(0, 2);
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -32,12 +40,17 @@ class _SavedCardState extends State<SavedCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('**** **** **** ' + widget.card.cardNumber.toString().substring(12), style: const TextStyle(fontSize: 18, color: Colors.white),),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(widget.card.expiry, style: const TextStyle(fontSize: 18, color: Colors.white),),
-                    Text(widget.card.countryCode, style: const TextStyle(fontSize: 18, color: Colors.white))
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('**** **** **** ' + widget.card.cardNumber.toString().substring(12), style: const TextStyle(fontSize: 18, color: Colors.white),),
+                        Text(widget.card.expiry, style: const TextStyle(fontSize: 18, color: Colors.white),),
+                      ],
+                    ),
+                    SvgPicture.asset(firstTwoDigits.startsWith('4') ? 'lib/icons/visa.svg' : firstTwoDigits.startsWith('5') ? 'lib/icons/mastercard.svg' : 'lib/icons/american-express.svg')
                   ],
                 )
               ],
