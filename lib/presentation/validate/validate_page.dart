@@ -1,25 +1,27 @@
 /// {@category Screens}
-library validate_card;
+library validate_page;
 
 import 'dart:convert';
 import 'dart:math';
+import 'package:auto_route/annotations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:save_card/models/bank_card_model.dart';
-import 'package:save_card/utils/theme.dart';
-import 'package:save_card/widgets/custom_app_bar.dart';
-import 'package:save_card/widgets/custom_text_field.dart';
-import 'package:encrypted_shared_preferences/encrypted_shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ml_card_scanner/ml_card_scanner.dart';
 
-import '../providers/validated_cards_provider.dart';
+import 'package:save_card_core/providers/validated_cards_provider.dart';
+import 'package:save_card_core/src/domain/bank_card/bank_card_model.dart';
+import 'package:save_card_ui_kit/widgets/custom_app_bar.dart';
+import 'package:save_card_ui_kit/widgets/custom_text_field.dart';
+import 'package:save_card_ui_kit/utils/theme.dart';
+
 
 ///This screen is used for the purpose of Validating a Bank Card and will only
 ///store the card in local storage if has been validated successfully.
-class SaveCard extends ConsumerStatefulWidget {
-  const SaveCard({super.key, required this.id});
+@RoutePage()
+class ValidatePage extends ConsumerStatefulWidget {
+  const ValidatePage({super.key, required this.id});
 
   ///Route for GoRouter.
   static String route = 'save-card';
@@ -31,7 +33,7 @@ class SaveCard extends ConsumerStatefulWidget {
   ConsumerState createState() => _SavedCardsListState();
 }
 
-class _SavedCardsListState extends ConsumerState<SaveCard> {
+class _SavedCardsListState extends ConsumerState<ValidatePage> {
   ///The controller used for the Card Scanner.
   final ScannerWidgetController _controller = ScannerWidgetController();
 
@@ -46,14 +48,17 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
   TextEditingController countryCodeController = TextEditingController();
 
   ///Shared preference instance to save a valid card to local storage.
-  EncryptedSharedPreferences encryptedSharedPreferences =
-      EncryptedSharedPreferences();
+  AndroidOptions _getAndroidOptions() => const AndroidOptions(
+    encryptedSharedPreferences: true,
+  );
+  late final FlutterSecureStorage storage;
 
   ///Filename of SVG that should be show to indicate the card type.
   String cardType = '';
 
   @override
   void initState() {
+    storage = FlutterSecureStorage(aOptions: _getAndroidOptions());
     _controller.setCardListener((value) {
       String cardNumberScanned = value!.number;
       cardNumberController.text = cardNumberScanned;
@@ -537,7 +542,7 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
         margin: EdgeInsets.all(16),
         height: 50,
         child: TextButton(
-          onPressed: () {
+          onPressed: () async {
             if (cardHolderController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Name on Card is Required')));
@@ -584,26 +589,20 @@ class _SavedCardsListState extends ConsumerState<SaveCard> {
                   expiry: expiryDateController.text,
                   cvv: int.parse(cvvController.text),
                   countryCode: countryCodeController.text));
-              // ref.read(listOfSavedCards.notifier).state = bankCards;
-              encryptedSharedPreferences
-                  .setString(
-                      'savedCards',
-                      jsonEncode({
-                        'cards': [
-                          for (BankCardModel card in bankCards) card.toJson()
-                        ]
-                      }))
-                  .then((bool success) async {
-                if (success) {
-                  ref.read(listOfSavedCards.notifier).state = bankCards;
-                  context.pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Card is Valid')));
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Card is Invalid')));
-                }
-              });
+              try {
+                await storage.write(key: 'savedCards', value: jsonEncode({
+                  'cards': [
+                    for (BankCardModel card in bankCards) card.toJson()
+                  ]
+                }));
+                ref.read(listOfSavedCards.notifier).state = bankCards;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Card is Valid')));
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Card is Invalid')));
+              }
             }
           },
           child: Text(

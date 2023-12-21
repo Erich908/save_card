@@ -1,0 +1,6 @@
+# melos_managed_dependency_overrides: riga_core,riga_ui_kit,synapse_client
+dependency_overrides:
+  save_card_ui_kit:
+    path: ../../packages/save_card_ui_kit
+  save_card_core:
+    path: ../../packages/save_card_core
